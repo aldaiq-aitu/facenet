@@ -36,6 +36,12 @@ All models must use:
 | `benchmark_checkpoints.csv` | efficiency metrics |
 | `plots/*.png` | thesis figures |
 
+## Parallel execution
+
+When three devices are available, follow `DEVICE_PLAN.md`. Prepare the shared
+dataset bundle once, distribute the exact same splits and verification pairs,
+and run one model per device.
+
 ## Metrics to report
 
 ### Quality
