@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from facenet_pytorch import MTCNN
 
-from config import BACKBONE, MIN_FACE_SIZE, THRESHOLD
+from config import BACKBONE, CHECKPOINT_PATH, MIN_FACE_SIZE, THRESHOLD, USE_CHECKPOINT_THRESHOLD
 from model_registry import build_model, get_model_spec
 from preprocessing import prepare_face_tensor
 
@@ -25,6 +25,19 @@ mtcnn = MTCNN(keep_all=True, device=device, min_face_size=MIN_FACE_SIZE)
 spec = get_model_spec(BACKBONE)
 model = build_model(BACKBONE).eval().to(device)
 INPUT_SIZE = spec.input_size
+runtime_threshold = THRESHOLD
+
+if CHECKPOINT_PATH:
+    checkpoint = torch.load(CHECKPOINT_PATH, map_location="cpu")
+    if checkpoint["model_name"] != BACKBONE:
+        raise ValueError(
+            f"Checkpoint model '{checkpoint['model_name']}' does not match BACKBONE '{BACKBONE}'."
+        )
+    model.load_state_dict(checkpoint["model_state_dict"])
+    if USE_CHECKPOINT_THRESHOLD:
+        runtime_threshold = float(checkpoint["validation_metrics"]["threshold"])
+    print(f"Loaded checkpoint: {CHECKPOINT_PATH}")
+
 print(f"Backbone: {spec.name} ({spec.embedding_size}-d, {spec.input_size}x{spec.input_size})")
 
 
@@ -59,6 +72,6 @@ def recognize(embedding, database):
             if score > best_score:
                 best_score, best_name = score, name
 
-    if best_score > THRESHOLD:
+    if best_score > runtime_threshold:
         return best_name, best_score
     return "Unknown", best_score

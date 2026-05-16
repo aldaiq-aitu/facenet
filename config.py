@@ -1,16 +1,13 @@
-# ─── Model Selection ─────────────────────────────────────────────
-# Change BACKBONE to switch the recognition model.
-# Options: 'facenet', 'mobilefacenet', 'efficientnet_lite0'
-BACKBONE       = 'facenet'
+# Model selection
+BACKBONE = "facenet"
+CHECKPOINT_PATH = None  # e.g. "experiments/mobilefacenet/best.pt"
 
-# ─── Camera & Detection ─────────────────────────────────────────
-FRAME_SKIP     = 15   # run face detection every N frames
-RECOG_INTERVAL = 15   # re-recognize every N frames
-MIN_FACE_SIZE  = 120  # minimum face size in pixels
+# Camera and detection
+FRAME_SKIP = 15
+RECOG_INTERVAL = 15
+MIN_FACE_SIZE = 120
 
-# ── Recognition ────────────────────────────────
-THRESHOLD      = 0.7  # cosine similarity threshold
-DB_FILE        = 'faces_database.pkl'
-
-# ── Model-Specific (used only for FaceNet) ──────────────────────
-MODEL_NAME     = 'vggface2'
+# Recognition
+THRESHOLD = 0.7
+USE_CHECKPOINT_THRESHOLD = True
+DB_FILE = "faces_database.pkl"

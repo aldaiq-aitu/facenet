@@ -1,0 +1,16 @@
+model: facenet
+seed: 42
+epochs: 25
+batch_size: 48
+learning_rate: 0.0001
+weight_decay: 0.0005
+num_workers: 4
+arcface_scale: 64.0
+arcface_margin: 0.5
+scheduler: cosine
+min_lr: 0.000001
+early_stopping_patience: 8
+monitor: val_accuracy
+train_dir: data/splits/train
+val_pairs_csv: data/pairs/val_pairs.csv
+output_dir: experiments/facenet

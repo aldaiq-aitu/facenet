@@ -1,24 +1,25 @@
-from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
-import timm
+from models.facenet import FaceNet
+from models.efficientnet_lite import EfficientNetLite0Face
+
 
 def download_all_weights():
     failures = []
 
-    print("Downloading MobileFaceNet backbone weights (MobileNetV2)...")
+    print("Downloading FaceNet pretrained weights (VGGFace2)...")
     try:
-        mobilenet_v2(weights=MobileNet_V2_Weights.IMAGENET1K_V1)
-        print("MobileNetV2 weights downloaded successfully!")
-    except Exception as e:
-        failures.append(f"MobileNetV2: {e}")
-        print(f"Error downloading MobileNetV2: {e}")
+        FaceNet(pretrained="vggface2")
+        print("FaceNet weights downloaded successfully!")
+    except Exception as exc:
+        failures.append(f"FaceNet: {exc}")
+        print(f"Error downloading FaceNet: {exc}")
 
-    print("\nDownloading EfficientNet-Lite0 backbone weights...")
+    print("\nDownloading EfficientNet-Lite0 ImageNet backbone weights...")
     try:
-        timm.create_model('efficientnet_lite0', pretrained=True)
-        print("EfficientNet-Lite0 weights downloaded successfully!")
-    except Exception as e:
-        failures.append(f"EfficientNet-Lite0: {e}")
-        print(f"Error downloading EfficientNet-Lite0: {e}")
+        EfficientNetLite0Face(pretrained=True)
+        print("EfficientNet-Lite0 backbone weights downloaded successfully!")
+    except Exception as exc:
+        failures.append(f"EfficientNet-Lite0: {exc}")
+        print(f"Error downloading EfficientNet-Lite0: {exc}")
 
     if failures:
         raise RuntimeError("One or more weight downloads failed: " + "; ".join(failures))

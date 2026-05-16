@@ -46,3 +46,6 @@ trash/
 checkpoints/
 graph_*.png
 *.pt
+data/
+experiments/
+results/

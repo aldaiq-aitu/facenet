@@ -72,12 +72,42 @@ The evaluator searches for the best cosine-similarity threshold and reports:
 - FAR;
 - FRR.
 
-## Still required before final diploma experiments
+## Implemented workflow
 
-1. choose and prepare the training dataset;
-2. add a deterministic alignment stage for the full dataset;
-3. introduce train/validation/test splits;
-4. add learning-rate scheduling, validation, checkpoint selection, and experiment logging;
-5. benchmark end-to-end latency in addition to model-only latency;
-6. add ROC/EER reporting and exportable result tables;
-7. run the same full protocol for all three models.
+```bash
+python -m scripts.align_dataset --input-dir raw_dataset --output-dir data/aligned
+python -m scripts.create_splits --input-dir data/aligned --output-dir data/splits
+python -m scripts.create_pairs --split-dir data/splits/val --output-csv data/pairs/val_pairs.csv
+python -m scripts.create_pairs --split-dir data/splits/test --output-csv data/pairs/test_pairs.csv
+python -m scripts.run_all_experiments
+```
+
+Training now includes:
+
+- reproducible seeding;
+- shared augmentation;
+- validation after every epoch;
+- cosine learning-rate scheduling;
+- best/last checkpoints;
+- early stopping;
+- CSV training history;
+- validation-threshold calibration.
+
+Evaluation now includes:
+
+- accuracy;
+- precision;
+- recall;
+- F1;
+- FAR;
+- FRR;
+- ROC-AUC;
+- EER;
+- ROC curve export.
+
+## Still required before the final defense
+
+1. acquire a legally usable face dataset;
+2. run the prepared workflow on a GPU machine;
+3. export the resulting metrics and figures;
+4. write the diploma discussion around the actual measured trade-offs.

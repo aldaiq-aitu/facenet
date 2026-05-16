@@ -1,155 +1,112 @@
 # Energy-Efficient Face Recognition System
 
-A lightweight real-time face recognition system built with MobileFaceNet/FaceNet and OpenCV, designed for energy-efficient deployment on CPU-based devices.
+A diploma-oriented face-recognition project that combines:
 
-## Project Structure
+- a real-time webcam demo;
+- a reproducible research pipeline for training and comparing FaceNet,
+  MobileFaceNet, and EfficientNet-Lite0 under one protocol.
+
+## Repository layout
+
+```text
+.
+├── configs/                  # experiment configs for all three models
+├── evaluation/               # verification metrics and reports
+├── models/                   # backbone implementations
+├── scripts/                  # alignment, splits, pairs, batch experiments
+├── training/                 # ArcFace training pipeline
+├── benchmark_checkpoints.py  # benchmark trained checkpoints
+├── camera.py                 # real-time webcam application
+├── embeddings.py             # runtime embeddings and recognition
+├── preprocessing.py          # shared alignment and normalization
+├── COLAB_GUIDE.md            # GPU execution guide
+├── DATASETS.md               # dataset strategy
+├── RESEARCH_PIPELINE.md      # implementation details
+└── THESIS_WORKFLOW.md         # diploma structure and required artifacts
 ```
-Diploma/
-├── main.py            # Entry point
-├── camera.py          # Main camera loop, tracking, enrollment
-├── embeddings.py      # Model loading, embedding extraction, recognition
-├── database.py        # Face database load/save operations
-├── config.py          # All configurable parameters
-├── requirements.txt   # Python dependencies
-├── benchmark.py       # Performance & Energy efficiency testing tool
-├── faces_database.pkl # Stored face embeddings (auto-generated)
-└── README.md
-```
-
-## Benchmarking (Research)
-
-To compare models for energy efficiency and performance:
-```bash
-python benchmark.py
-```
-
-**Current Baseline (FaceNet / VGGFace2):**
-- **Parameters:** 27.91 M
-- **Latency:** ~12.10 ms (Inference only)
-- **CPU Usage:** ~90.9%
-- **Memory Usage:** ~481.05 MB
-- **Estimated Model FPS:** ~82.7
-
-*Wait, real camera FPS is lower (~10-15) because it includes detection (MTCNN), tracking, and rendering.*
-
-## Requirements
-
-- Python 3.11
-- macOS / Linux / Windows
 
 ## Installation
 
-**1. Clone or download the project**
 ```bash
-cd ~/Downloads/Diploma
-```
-
-**2. Create virtual environment with Python 3.11**
-```bash
-python3.11 -m venv venv
-source venv/bin/activate        # macOS/Linux
-# venv\Scripts\activate         # Windows
-```
-
-**3. Install dependencies**
-```bash
+python -m venv venv
+venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Usage
+## Real-time demo
 
-**Recommended FaceNet-only script**
-```bash
-python facenet_recognition.py
-```
-
-**Run the system**
 ```bash
 python main.py
 ```
 
-**Controls**
+Controls:
 
 | Key | Action |
-|-----|--------|
-| `E` | Enroll a new face (type name in terminal) |
-| `D` | Delete an enrolled person |
-| `L` | List enrolled people |
-| `Q` | Quit |
+|---|---|
+| `E` | enroll a face |
+| `D` | delete a person |
+| `L` | list enrolled people |
+| `Q` | quit |
 
-**Enrolling a face**
-1. Run `python facenet_recognition.py`
-2. Make sure your face is visible in the camera
-3. Press `E` in the camera window
-4. Type your name in the terminal and press Enter
-5. The box around your face will turn green
-
-## Configuration
-
-All parameters are in `config.py`:
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `BACKBONE` | `facenet` | Recognition model: `facenet`, `mobilefacenet`, or `efficientnet_lite0` |
-| `FRAME_SKIP` | `15` | Run face detection every N frames |
-| `RECOG_INTERVAL` | `15` | Re-recognize every N frames |
-| `THRESHOLD` | `0.7` | Minimum cosine similarity to confirm identity |
-| `MIN_FACE_SIZE` | `120` | Minimum face size in pixels to detect |
-| `MODEL_NAME` | `vggface2` | Pretrained weights to use |
-| `DB_FILE` | `faces_database.pkl` | Path to face database file |
-
-## How It Works
-```
-Camera frame
-     │
-     ▼
-MTCNN (face detection) — runs every FRAME_SKIP frames
-     │
-     ▼
-Face crop → resize 160×160
-     │
-     ▼
-FaceNet (embedding extraction) — outputs 512-dimensional vector
-     │
-     ▼
-Cosine similarity vs database — compare against all stored vectors
-     │
-     ▼
-Identity + confidence score — displayed on screen
-```
-
-## Performance
-
-Tested on MacBook Pro (Apple M-series), CPU only:
-
-| Metric | Value |
-|--------|-------|
-| FPS | ~10–15 (CPU) |
-| Detection model | MTCNN |
-| Recognition model | InceptionResnetV1 (VGGFace2) |
-| Embedding size | 512-d float32 |
-| Database format | Python pickle |
-
-## Known Limitations
-
-- Face database is stored as a local `.pkl` file — not suitable for production
-- No GPU acceleration (CPU only in current setup)
-- Recognition accuracy decreases with poor lighting or extreme head angles
-- `pickle` format has no encryption — database file should not be shared
-
-## Future Work
-
-- [ ] Migrate to Django web interface
-- [ ] Replace pickle database with PostgreSQL
-- [ ] Swap FaceNet for MobileFaceNet for better energy efficiency
-- [ ] Add GPU support via CoreML (Apple Silicon) or CUDA
-- [ ] REST API for remote recognition requests
-- [ ] Logging and analytics dashboard
-
-## Author
-
-## Start project
+## Full research workflow
 
 ```bash
-source venv/bin/activate && python main.py
+python -m scripts.align_dataset --input-dir raw_dataset --output-dir data/aligned
+python -m scripts.create_splits --input-dir data/aligned --output-dir data/splits
+python -m scripts.create_pairs --split-dir data/splits/val --output-csv data/pairs/val_pairs.csv
+python -m scripts.create_pairs --split-dir data/splits/test --output-csv data/pairs/test_pairs.csv
+python -m scripts.run_all_experiments
+python -m evaluation.compare_models \
+  --pairs-csv data/pairs/test_pairs.csv \
+  --checkpoint experiments/facenet/best.pt \
+  --checkpoint experiments/mobilefacenet/best.pt \
+  --checkpoint experiments/efficientnet_lite0/best.pt \
+  --output-csv results/model_comparison.csv
+python benchmark_checkpoints.py \
+  --checkpoint experiments/facenet/best.pt \
+  --checkpoint experiments/mobilefacenet/best.pt \
+  --checkpoint experiments/efficientnet_lite0/best.pt \
+  --output-csv results/benchmark_checkpoints.csv
+python plot_results.py \
+  --metrics-csv results/model_comparison.csv \
+  --benchmark-csv results/benchmark_checkpoints.csv
 ```
+
+## Compared models
+
+| Model | Input | Embedding | Role |
+|---|---:|---:|---|
+| `facenet` | 160x160 | 512-d | accuracy-oriented baseline |
+| `mobilefacenet` | 112x112 | 128-d | lightweight candidate |
+| `efficientnet_lite0` | 112x112 | 512-d | efficient CNN candidate |
+
+## Research outputs
+
+The pipeline produces:
+
+- aligned-face manifest;
+- identity-disjoint train/validation/test splits;
+- balanced verification-pair CSVs;
+- training histories;
+- best and last checkpoints;
+- validation-calibrated thresholds;
+- held-out test metrics;
+- ROC curves;
+- checkpoint benchmarks;
+- thesis-ready comparison plots.
+
+## Supporting documents
+
+- [COLAB_GUIDE.md](COLAB_GUIDE.md)
+- [DATASETS.md](DATASETS.md)
+- [MODEL_USAGE.md](MODEL_USAGE.md)
+- [RESEARCH_PIPELINE.md](RESEARCH_PIPELINE.md)
+- [THESIS_WORKFLOW.md](THESIS_WORKFLOW.md)
+
+## Notes
+
+- Local biometric databases (`*.pkl`) are intentionally ignored by Git.
+- The repository is dataset-agnostic because many large face datasets have
+  separate license or registration requirements.
+- The local machine used for development may run the demo on CPU, while final
+  training is expected to run on a GPU environment such as Google Colab.

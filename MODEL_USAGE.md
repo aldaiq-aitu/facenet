@@ -1,36 +1,63 @@
-# Руководство по Моделям Распознавания Лиц
+# Model Usage Guide
 
-В этом проекте настроены и доступны 3 модели для тестирования. Вы можете легко переключаться между ними, изменяя одну переменную в файле `config.py`. 
+The repository compares three backbones under one face-recognition protocol.
 
-## Доступные модели
+| Config name | Input | Embedding | Intended role |
+|---|---:|---:|---|
+| `facenet` | 160x160 | 512-d | strong baseline |
+| `mobilefacenet` | 112x112 | 128-d | lightweight mobile candidate |
+| `efficientnet_lite0` | 112x112 | 512-d | efficient CNN candidate |
 
-| Название (в `config.py`) | Параметры | Эмбеддинг | Точность | Описание |
-|-------------------------|-----------|-----------|----------|----------|
-| `facenet`               | ~27.9M    | 512-d     | **Высокая**| Тяжелая модель (InceptionResnetV1). Использует веса, предварительно обученные на датасете лиц (VGGFace2). Отлично распознает людей "из коробки". |
-| `mobilefacenet`         | ~2.3M     | 128-d     | Средняя  | Лёгкая модель для мобильных устройств. Сейчас использует веса от ImageNet (общие объекты). Качество распознавания ниже, так как она не обучена специфично на лицах. |
-| `efficientnet_lite0`    | ~3.4M     | 512-d     | Средняя  | Энергоэффективная модель, адаптированная под лица. Также использует веса от ImageNet, что влияет на точность. |
+## Important methodological note
 
-## Как переключать модели
+All three backbones should be evaluated only after the shared research pipeline:
 
-1. Откройте файл `config.py`
-2. Найдите строку `BACKBONE = 'facenet'` (или другое текущее значение)
-3. Измените значение на нужную модель. Например:
-   ```python
-   BACKBONE = 'mobilefacenet'
-   ```
-4. Сохраните файл `config.py`.
+1. aligned inputs;
+2. ArcFace training/fine-tuning;
+3. validation threshold calibration;
+4. held-out test evaluation.
 
-## Как запускать программу
+`FaceNet` starts from pretrained face-recognition weights.
 
-Для запуска всегда используйте виртуальное окружение:
+`MobileFaceNet` is implemented as a compact MobileFaceNet-style backbone and
+must be trained on face identities.
 
-```bash
-# Активация окружения и запуск скрипта
-source venv/bin/activate && python main.py
+`EfficientNet-Lite0` starts from an ImageNet-pretrained backbone and must be
+fine-tuned for face recognition before being compared with the other models.
+
+## Switching the runtime backbone
+
+Edit `config.py`:
+
+```python
+BACKBONE = "mobilefacenet"
 ```
 
-### Важное замечание о базе данных
-При переключении модели программа автоматически определит изменение `BACKBONE` и **очистит базу данных лиц**, так как эмбеддинги разных моделей (например, размер 512 и 128) несовместимы.
-После каждой смены модели вам потребуется заново нажать **E** и зарегистрировать людей через веб-камеру. 
+Available values:
 
-Для достижения наилучшей точности распознавания **Facenet** — ваш основной выбор "из коробки". Для полноценного использования легких моделей (как `mobilefacenet`) в дипломной работе вам в будущем может потребоваться дообучить их (fine-tuning) на датасетах лиц, таких как CASIA-WebFace.
+```python
+"facenet"
+"mobilefacenet"
+"efficientnet_lite0"
+```
+
+## Training
+
+Use the predefined experiment configs:
+
+```bash
+python -m training.train --config configs/facenet.yaml
+python -m training.train --config configs/mobilefacenet.yaml
+python -m training.train --config configs/efficientnet_lite0.yaml
+```
+
+Or train all three:
+
+```bash
+python -m scripts.run_all_experiments
+```
+
+## Database compatibility
+
+Embeddings produced by different backbones are not interchangeable. If the
+runtime backbone changes, enroll identities again before using the webcam demo.

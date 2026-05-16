@@ -2,36 +2,47 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from pathlib import Path
 
-import numpy as np
+import matplotlib.pyplot as plt
 import torch
-from PIL import Image
 
-from evaluation.metrics import find_best_threshold
+from evaluation.inference import score_pairs
+from evaluation.io import read_pairs_csv
+from evaluation.metrics import compute_verification_metrics, find_best_threshold, roc_curve
 from model_registry import build_model, get_model_spec
-from preprocessing import prepare_face_tensor
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate a checkpoint on verification pairs.")
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--pairs-csv", type=Path, required=True)
+    parser.add_argument("--threshold", type=float, default=None)
+    parser.add_argument("--output-dir", type=Path, default=None)
     return parser.parse_args()
 
 
-def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
-    a = a / max(np.linalg.norm(a), 1e-12)
-    b = b / max(np.linalg.norm(b), 1e-12)
-    return float(np.dot(a, b))
+def save_outputs(output_dir: Path, metrics, scores, labels):
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "metrics.json").write_text(json.dumps(metrics.to_dict(), indent=2), encoding="utf-8")
 
+    with (output_dir / "scores.csv").open("w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["score", "label"])
+        writer.writerows(zip(scores, labels))
 
-def load_embedding(model, image_path: Path, input_size: int, device: torch.device) -> np.ndarray:
-    image = Image.open(image_path).convert("RGB").resize((input_size, input_size))
-    tensor = prepare_face_tensor(image).unsqueeze(0).to(device)
-    with torch.no_grad():
-        embedding = model(tensor)[0].cpu().numpy()
-    return embedding
+    fprs, tprs, _ = roc_curve(scores, labels)
+    plt.figure(figsize=(6, 5))
+    plt.plot(fprs, tprs, label=f"AUC = {metrics.roc_auc:.4f}")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_dir / "roc_curve.png", dpi=200)
+    plt.close()
 
 
 def main():
@@ -45,32 +56,31 @@ def main():
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval().to(device)
 
-    scores, labels = [], []
-    with args.pairs_csv.open("r", newline="", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-        required = {"path1", "path2", "is_same"}
-        if set(reader.fieldnames or []) != required:
-            raise ValueError(f"pairs CSV must contain exactly columns: {sorted(required)}")
+    pairs = read_pairs_csv(args.pairs_csv)
+    scores, labels = score_pairs(model, pairs, spec.input_size, device)
 
-        for row in reader:
-            emb1 = load_embedding(model, Path(row["path1"]), spec.input_size, device)
-            emb2 = load_embedding(model, Path(row["path2"]), spec.input_size, device)
-            scores.append(cosine_similarity(emb1, emb2))
-            labels.append(int(row["is_same"]))
-
-    best = find_best_threshold(scores, labels)
+    metrics = (
+        compute_verification_metrics(scores, labels, args.threshold)
+        if args.threshold is not None
+        else find_best_threshold(scores, labels)
+    )
     print(
         "threshold={:.4f} accuracy={:.4f} precision={:.4f} recall={:.4f} "
-        "f1={:.4f} FAR={:.4f} FRR={:.4f}".format(
-            best.threshold,
-            best.accuracy,
-            best.precision,
-            best.recall,
-            best.f1,
-            best.far,
-            best.frr,
+        "f1={:.4f} FAR={:.4f} FRR={:.4f} AUC={:.4f} EER={:.4f}".format(
+            metrics.threshold,
+            metrics.accuracy,
+            metrics.precision,
+            metrics.recall,
+            metrics.f1,
+            metrics.far,
+            metrics.frr,
+            metrics.roc_auc,
+            metrics.eer,
         )
     )
+
+    if args.output_dir is not None:
+        save_outputs(args.output_dir, metrics, scores, labels)
 
 
 if __name__ == "__main__":
