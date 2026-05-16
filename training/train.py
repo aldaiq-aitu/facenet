@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import time
 from pathlib import Path
 
 import torch
@@ -11,6 +12,7 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 
+from device_utils import get_device
 from evaluation.inference import score_pairs
 from evaluation.io import read_pairs_csv
 from evaluation.metrics import find_best_threshold
@@ -27,14 +29,23 @@ def parse_args():
     return parser.parse_args()
 
 
-def train_one_epoch(model, head, loader, optimizer, device):
+def _format_seconds(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def train_one_epoch(model, head, loader, optimizer, device, epoch: int, total_epochs: int):
     model.train()
     head.train()
     total_loss = 0.0
     total_correct = 0
     total_samples = 0
+    epoch_start = time.perf_counter()
+    log_every = max(1, len(loader) // 10)
 
-    for images, labels in loader:
+    for batch_index, (images, labels) in enumerate(loader, start=1):
         images = images.to(device)
         labels = labels.to(device)
 
@@ -48,6 +59,21 @@ def train_one_epoch(model, head, loader, optimizer, device):
         total_loss += loss.item() * images.size(0)
         total_correct += (logits.argmax(dim=1) == labels).sum().item()
         total_samples += images.size(0)
+
+        if batch_index == 1 or batch_index % log_every == 0 or batch_index == len(loader):
+            elapsed = time.perf_counter() - epoch_start
+            avg_batch_time = elapsed / batch_index
+            remaining_batches = len(loader) - batch_index
+            batch_eta = remaining_batches * avg_batch_time
+            print(
+                f"epoch={epoch:03d}/{total_epochs:03d} "
+                f"batch={batch_index:04d}/{len(loader):04d} "
+                f"loss={total_loss / max(1, total_samples):.4f} "
+                f"train_acc={total_correct / max(1, total_samples):.4f} "
+                f"elapsed={_format_seconds(elapsed)} "
+                f"epoch_eta={_format_seconds(batch_eta)}",
+                flush=True,
+            )
 
     return total_loss / max(1, total_samples), total_correct / max(1, total_samples)
 
@@ -71,7 +97,7 @@ def main():
     seed_everything(cfg.seed)
 
     spec = get_model_spec(cfg.model)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     print(f"Using device: {device}")
 
     train_dataset = FaceImageFolder(cfg.train_dir, input_size=spec.input_size, training=True)
@@ -127,7 +153,15 @@ def main():
         )
 
         for epoch in range(1, cfg.epochs + 1):
-            train_loss, train_accuracy = train_one_epoch(model, head, train_loader, optimizer, device)
+            train_loss, train_accuracy = train_one_epoch(
+                model,
+                head,
+                train_loader,
+                optimizer,
+                device,
+                epoch,
+                cfg.epochs,
+            )
             scores, labels = score_pairs(model, val_pairs, spec.input_size, device)
             val_metrics = find_best_threshold(scores, labels)
             current_lr = optimizer.param_groups[0]["lr"]

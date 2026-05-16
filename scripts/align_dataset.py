@@ -9,6 +9,7 @@ import torch
 from facenet_pytorch import MTCNN
 from PIL import Image
 
+from device_utils import get_device
 from preprocessing import align_face, crop_face
 
 
@@ -35,7 +36,7 @@ def iter_images(root: Path):
 
 def main():
     args = parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     detector = MTCNN(keep_all=True, device=device, min_face_size=args.min_face_size)
     manifest_path = args.manifest or (args.output_dir / "alignment_manifest.csv")
     manifest_path.parent.mkdir(parents=True, exist_ok=True)

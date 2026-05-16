@@ -9,6 +9,8 @@ import torch
 from facenet_pytorch import InceptionResnetV1, MTCNN
 from PIL import Image
 
+from device_utils import get_device as select_device
+
 MODEL_ID = "facenet_vggface2_512d"
 MODEL_NAME = "vggface2"
 DB_FILE = Path("facenet_database.pkl")
@@ -25,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_device():
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return select_device()
 
 
 def normalize(vector):

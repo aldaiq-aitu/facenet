@@ -10,6 +10,7 @@ import numpy as np
 import psutil
 import torch
 
+from device_utils import get_device
 from model_registry import build_model, get_model_spec
 
 
@@ -39,7 +40,7 @@ def benchmark_checkpoint(checkpoint_path: Path, runs: int, warmup: int):
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
     model_name = checkpoint["model_name"]
     spec = get_model_spec(model_name)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
 
     model = build_model(model_name)
     model.load_state_dict(checkpoint["model_state_dict"])

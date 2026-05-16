@@ -8,6 +8,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import torch
 
+from device_utils import get_device
 from evaluation.inference import score_pairs
 from evaluation.io import read_pairs_csv
 from evaluation.metrics import compute_verification_metrics, find_best_threshold, roc_curve
@@ -50,7 +51,7 @@ def main():
     checkpoint = torch.load(args.checkpoint, map_location="cpu")
     model_name = checkpoint["model_name"]
     spec = get_model_spec(model_name)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
 
     model = build_model(model_name)
     model.load_state_dict(checkpoint["model_state_dict"])

@@ -12,12 +12,13 @@ import torch
 from facenet_pytorch import MTCNN
 
 from config import BACKBONE, CHECKPOINT_PATH, MIN_FACE_SIZE, THRESHOLD, USE_CHECKPOINT_THRESHOLD
+from device_utils import get_device
 from model_registry import build_model, get_model_spec
 from preprocessing import prepare_face_tensor
 
 logger = logging.getLogger(__name__)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = get_device()
 print(f"Using: {device}")
 
 mtcnn = MTCNN(keep_all=True, device=device, min_face_size=MIN_FACE_SIZE)

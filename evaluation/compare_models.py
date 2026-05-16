@@ -7,6 +7,7 @@ from pathlib import Path
 
 import torch
 
+from device_utils import get_device
 from evaluation.inference import score_pairs
 from evaluation.io import read_pairs_csv
 from evaluation.metrics import compute_verification_metrics
@@ -23,7 +24,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     pairs = read_pairs_csv(args.pairs_csv)
     rows = []
 
