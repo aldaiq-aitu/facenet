@@ -31,16 +31,32 @@ def parse_args():
 
 def read_identity_file(path: Path):
     identities = defaultdict(list)
-    with path.open("r", encoding="utf-8") as file:
-        for raw_line in file:
-            line = raw_line.strip()
-            if not line:
-                continue
-            parts = line.split()
-            if len(parts) != 2:
-                raise ValueError(f"Invalid identity annotation line: {raw_line!r}")
-            image_name, identity_id = parts
-            identities[identity_id].append(image_name)
+    if path.suffix.lower() == ".csv":
+        with path.open("r", newline="", encoding="utf-8") as file:
+            sample = file.read(1024)
+            file.seek(0)
+            has_header = csv.Sniffer().has_header(sample)
+            reader = csv.reader(file)
+            for row_index, row in enumerate(reader):
+                if not row:
+                    continue
+                if row_index == 0 and has_header:
+                    continue
+                if len(row) != 2:
+                    raise ValueError(f"Invalid CSV identity annotation row: {row!r}")
+                image_name, identity_id = row
+                identities[identity_id].append(image_name)
+    else:
+        with path.open("r", encoding="utf-8") as file:
+            for raw_line in file:
+                line = raw_line.strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if len(parts) != 2:
+                    raise ValueError(f"Invalid identity annotation line: {raw_line!r}")
+                image_name, identity_id = parts
+                identities[identity_id].append(image_name)
     return identities
 
 
@@ -63,9 +79,18 @@ def main():
         raise ValueError("min_images_per_identity must be >= images_per_identity.")
 
     image_map = read_identity_file(args.identity_file)
+    existing_images = {
+        path.name
+        for path in args.images_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
+    }
+    available_image_map = {
+        identity_id: [name for name in image_names if name in existing_images]
+        for identity_id, image_names in image_map.items()
+    }
     eligible = {
         identity_id: image_names
-        for identity_id, image_names in image_map.items()
+        for identity_id, image_names in available_image_map.items()
         if len(image_names) >= args.min_images_per_identity
     }
     if len(eligible) < args.num_identities:
@@ -82,24 +107,14 @@ def main():
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest_rows = []
-    missing_files = []
     for new_index, identity_id in enumerate(selected_identity_ids, start=1):
         chosen_images = rng.sample(eligible[identity_id], k=args.images_per_identity)
         subset_identity = f"person_{new_index:04d}"
         for image_name in chosen_images:
             source = args.images_dir / image_name
-            if not source.exists() or source.suffix.lower() not in IMAGE_SUFFIXES:
-                missing_files.append(str(source))
-                continue
             destination = args.output_dir / subset_identity / source.name
             materialize_image(source, destination, args.copy_mode)
             manifest_rows.append([subset_identity, identity_id, source.name, str(destination)])
-
-    if missing_files:
-        raise FileNotFoundError(
-            "Some annotated CelebA images were missing from images_dir. "
-            f"First missing file: {missing_files[0]}"
-        )
 
     manifest_path = args.output_dir / "celeba_subset_manifest.csv"
     with manifest_path.open("w", newline="", encoding="utf-8") as file:
@@ -110,6 +125,10 @@ def main():
     print(
         f"Created CelebA-Light subset with {args.num_identities} identities x "
         f"{args.images_per_identity} images = {len(manifest_rows)} images."
+    )
+    print(
+        f"Found {len(existing_images)} images on disk; "
+        f"{len(eligible)} identities satisfied the minimum-image requirement."
     )
     print(f"Manifest saved to {manifest_path}")
 

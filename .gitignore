@@ -49,3 +49,6 @@ graph_*.png
 data/
 experiments/
 results/
+dataset/
+shared_experiment_bundle/
+shared_experiment_bundle.zip

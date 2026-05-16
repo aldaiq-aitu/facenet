@@ -55,6 +55,14 @@ python -m scripts.prepare_celeba_subset \
   --min-images-per-identity 20
 ```
 
+The script also accepts CSV identity files such as:
+
+```text
+image_id,identity
+000001.jpg,2880
+000002.jpg,2937
+```
+
 Then use `data/celeba_light` as the input to the normal alignment/split/pair
 workflow. Since CelebA already provides aligned images, you may use it directly
 as the split input when schedule matters, or run `scripts.align_dataset` anyway
