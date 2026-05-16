@@ -39,6 +39,31 @@ Recommended research-grade training choices:
 - at least several images per identity;
 - enough identities to keep validation and test identities disjoint from train identities.
 
+### Fast diploma option: CelebA-Light
+
+If you are using the recommended lightweight CelebA setup, upload or mount:
+
+- `img_align_celeba/`
+- `identity_CelebA.txt`
+
+Then build the shared subset once:
+
+```bash
+!python -m scripts.prepare_celeba_subset \
+  --images-dir /content/img_align_celeba \
+  --identity-file /content/identity_CelebA.txt \
+  --output-dir data/celeba_light \
+  --num-identities 1000 \
+  --images-per-identity 20 \
+  --min-images-per-identity 20
+```
+
+Set:
+
+```python
+RAW_DATASET_DIR = "data/celeba_light"
+```
+
 ## 4. Prepare aligned data
 
 ```bash
