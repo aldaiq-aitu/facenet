@@ -98,6 +98,7 @@ The pipeline produces:
 ## Supporting documents
 
 - [COLAB_GUIDE.md](COLAB_GUIDE.md)
+- [notebooks/train_all_models_colab.ipynb](notebooks/train_all_models_colab.ipynb)
 - [DATASETS.md](DATASETS.md)
 - [MODEL_USAGE.md](MODEL_USAGE.md)
 - [RESEARCH_PIPELINE.md](RESEARCH_PIPELINE.md)

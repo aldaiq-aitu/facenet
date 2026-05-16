@@ -3,6 +3,9 @@
 This project is prepared so that the final training runs can be executed on a
 GPU machine even when the local development machine has no CUDA device.
 
+If you prefer a notebook flow, open `notebooks/train_all_models_colab.ipynb`
+and run it from top to bottom.
+
 ## 1. Open a GPU runtime
 
 In Colab:
