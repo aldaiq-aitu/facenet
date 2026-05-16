@@ -1,0 +1,34 @@
+BENCHMARK RESULTS — Face Recognition Models
+Device: CPU
+Runs per model: 200
+============================================================
+
+Model: FaceNet
+  Parameters:   27.91 M
+  Model size:   106.47 MB
+  Latency:      13.65 ms (±1.64)
+  FPS:          73.3
+  Memory:       521.0 MB
+  CPU:          69.8 %
+
+Model: MobileFaceNet
+  Parameters:   2.39 M
+  Model size:   9.11 MB
+  Latency:      29.61 ms (±3.94)
+  FPS:          33.8
+  Memory:       530.0 MB
+  CPU:          70.1 %
+
+Model: EfficientNet-Lite0
+  Parameters:   4.03 M
+  Model size:   15.36 MB
+  Latency:      145.05 ms (±18.60)
+  FPS:          6.9
+  Memory:       296.3 MB
+  CPU:          54.0 %
+
+============================================================
+Energy-Efficiency Score (params × latency):
+  MobileFaceNet             → 70.70
+  FaceNet                   → 380.94
+  EfficientNet-Lite0        → 584.17
