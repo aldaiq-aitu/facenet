@@ -58,12 +58,12 @@ python -m scripts.create_pairs --split-dir data/splits/test --output-csv data/pa
 python -m scripts.run_all_experiments
 python -m evaluation.compare_models \
   --pairs-csv data/pairs/test_pairs.csv \
-  --checkpoint experiments/facenet/best.pt \
+  --checkpoint baselines/facenet_pretrained/baseline.pt \
   --checkpoint experiments/mobilefacenet/best.pt \
   --checkpoint experiments/efficientnet_lite0/best.pt \
   --output-csv results/model_comparison.csv
 python benchmark_checkpoints.py \
-  --checkpoint experiments/facenet/best.pt \
+  --checkpoint baselines/facenet_pretrained/baseline.pt \
   --checkpoint experiments/mobilefacenet/best.pt \
   --checkpoint experiments/efficientnet_lite0/best.pt \
   --output-csv results/benchmark_checkpoints.csv

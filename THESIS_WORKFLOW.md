@@ -24,6 +24,11 @@ All models must use:
 5. model-specific thresholds calibrated on validation only;
 6. the same benchmark machine and benchmark script.
 
+If time is limited, FaceNet may be used as a **pretrained baseline** without
+additional fine-tuning, while MobileFaceNet and EfficientNet-Lite0 are trained
+under the shared protocol. The final report must state this explicitly rather
+than presenting FaceNet as a trained model.
+
 ## Final experimental artifacts
 
 | Artifact | Purpose |

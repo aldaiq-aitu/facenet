@@ -115,18 +115,35 @@ experiments/mobilefacenet/
 experiments/efficientnet_lite0/
 ```
 
+If FaceNet is used as a pretrained baseline instead of being trained, first run:
+
+```bash
+python -m scripts.evaluate_pretrained_baseline \
+  --val-pairs-csv data/pairs/val_pairs.csv \
+  --test-pairs-csv data/pairs/test_pairs.csv \
+  --output-dir baselines/facenet_pretrained
+```
+
+Then use:
+
+```text
+baselines/facenet_pretrained/baseline.pt
+```
+
+in place of `experiments/facenet/best.pt`.
+
 Then run:
 
 ```bash
 python -m evaluation.compare_models \
   --pairs-csv data/pairs/test_pairs.csv \
-  --checkpoint experiments/facenet/best.pt \
+  --checkpoint baselines/facenet_pretrained/baseline.pt \
   --checkpoint experiments/mobilefacenet/best.pt \
   --checkpoint experiments/efficientnet_lite0/best.pt \
   --output-csv results/model_comparison.csv
 
 python benchmark_checkpoints.py \
-  --checkpoint experiments/facenet/best.pt \
+  --checkpoint baselines/facenet_pretrained/baseline.pt \
   --checkpoint experiments/mobilefacenet/best.pt \
   --checkpoint experiments/efficientnet_lite0/best.pt \
   --output-csv results/benchmark_checkpoints.csv

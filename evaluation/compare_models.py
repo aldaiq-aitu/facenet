@@ -43,6 +43,7 @@ def main():
             {
                 "model": model_name,
                 "checkpoint": str(checkpoint_path),
+                "baseline_type": checkpoint.get("baseline_type", "trained"),
                 **metrics.to_dict(),
             }
         )
